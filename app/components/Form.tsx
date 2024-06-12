@@ -1,7 +1,8 @@
 import { useForm } from "react-hook-form";
 import FormField from "./FormField";
-import { FormData, UserSchema } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { FormData, UserSchema, ValidFieldNames } from "@/types";  
+import axios from "axios";
 function Form() {
   const {
     register,
@@ -13,7 +14,41 @@ function Form() {
   });
 
   const onSubmit = async (data: FormData) => {
-    console.log("SUCCESS", data);
+    try {
+      // Update data sent in axios with incorrect data
+      const response = await axios.post("/api/form", {
+        email: "Not an email",
+        githubUrl: "Not a URL",
+        yearsOfExperience: "Hello",
+        password: 1234,
+        confirmPassword: 1234,
+      }); // Make a POST request
+
+      // Define a mapping between server-side field names and their corresponding client-side names
+      const fieldErrorMapping: Record<string, ValidFieldNames> = {
+        email: "email",
+        githubUrl: "githubUrl",
+        yearsOfExperience: "yearsOfExperience",
+        password: "password",
+        confirmPassword: "confirmPassword",
+      };
+
+      // Find the first field with an error in the response data
+      const fieldWithError = Object.keys(fieldErrorMapping).find(
+        (field) => errors[field]
+      );
+
+      // If a field with an error is found, update the form error state using setError
+      if (fieldWithError) {
+        // Use the ValidFieldNames type to ensure the correct field names
+        setError(fieldErrorMapping[fieldWithError], {
+          type: "server",
+          message: errors[fieldWithError],
+        });
+      }
+    } catch (error) {
+      alert("Submitting form failed!");
+    }
   };
 
   return (
